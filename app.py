@@ -1,38 +1,48 @@
-from flask import Flask, request, render_template_string
+from flask import Flask
+import os
+import telebot
+import threading
+
 app = Flask(__name__)
 
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+bot = telebot.TeleBot(BOT_TOKEN)
+
 PRONOS = {
-  "maroc": "🇲🇦 MAROC vs NIGER - Victoire MAROC @1.35 BANKER CE SOIR 20h",
-  "egypte": "🇪🇬 EGYPTE vs MALAWI - Victoire EGYPTE @1.45 CE SOIR 19h",
-  "nigeria": "🇳🇬 NIGERIA vs TANZANIE - Victoire NIGERIA @1.50 AUJOURD'HUI 16h",
-  "senegal": "🇸🇳 SENEGAL - Repos aujourd'hui, joue Dimanche vs SOUDAN @1.40"
+    "maroc": "🇲🇦 MAROC vs NIGER - Victoire MAROC @1.35 BANKER CE SOIR 20h",
+    "egypte": "🇪🇬 EGYPTE vs MALAWI - Victoire EGYPTE @1.45 CE SOIR 19h",
+    "nigeria": "🇳🇬 NIGERIA vs TANZANIE - Victoire NIGERIA @1.50 AUJOURD'HUI 16h",
+    "senegal": "🇸🇳 SENEGAL - Repos aujourd'hui, joue Dimanche vs SOUDAN @1.40",
+    "burkina": "🇧🇫 BURKINA FASO - Notre équipe analyse les matchs à venir !",
 }
 
-HTML = """
-<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>RZ PRONOSTIC</title>
-<style>body{background:#000;color:#fff;font-family:Arial;padding:20px;text-align:center} .card{background:#111;border:2px solid #00ff00;border-radius:15px;padding:15px;margin:10px} h1{color:#00ff00} .btn{background:#00ff00;color:#000;padding:15px 30px;border-radius:30px;font-weight:bold;text-decoration:none;display:inline-block;margin:10px}</style>
-</head><body>
-<h1>🔥 RZ PRONOSTIC - PRONOS DU JOUR 🔥</h1>
-<p>Matchs du Vendredi 13 Novembre 2026</p>
-{% for k,v in pronos.items() %}
-<div class="card"><h3>{{ v }}</h3></div>
-{% endfor %}
-<a class="btn" href="https://t.me/rzpronostic">REJOINDRE TELEGRAM</a>
-<p style="margin-top:20px;color:#888">Bot mis à jour à 19:55 - Pronos du jour validés</p>
-</body></html>
-"""
+@bot.message_handler(commands=['start', 'help'])
+def start(m):
+    texte = "🔥 RZ PRONOSTIC - PRONOS DU JOUR 🔥\n\n"
+    texte += "Tape un nom pour avoir le prono :\n"
+    texte += "🇲🇦 maroc\n🇪🇬 egypte\n🇳🇬 nigeria\n🇸🇳 senegal\n🇧🇫 burkina\n\n"
+    texte += "Exemple: envoie 'maroc'"
+    bot.reply_to(m, texte)
+
+@bot.message_handler(func=lambda m: True)
+def prono(m):
+    msg = m.text.lower()
+    for k,v in PRONOS.items():
+        if k in msg:
+            bot.reply_to(m, v)
+            return
+    bot.reply_to(m, "Envoie: maroc, egypte, nigeria, senegal ou burkina pour avoir le prono du jour !")
 
 @app.route('/')
 def home():
-    return render_template_string(HTML, pronos=PRONOS)
+    return "RZ Pronostic Bot is Running! Go to t.me/rzprono_bf_bot"
 
-@app.route('/bot')
-def bot():
-    msg = request.args.get('msg','').lower()
-    for k,v in PRONOS.items():
-        if k in msg:
-            return v
-    return "Envoie: maroc, egypte, nigeria ou senegal pour avoir le prono du jour ! Matchs de ce soir."
-    
+def run_bot():
+    print("Bot Telegram demarre...")
+    bot.infinity_polling()
+
+# Lancer le bot en arriere plan
+threading.Thread(target=run_bot).start()
+
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=10000)
