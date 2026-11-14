@@ -1,75 +1,68 @@
-from flask import Flask
 import os
-import telebot
-import threading
-from telebot import types
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-app = Flask(__name__)
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
-bot = telebot.TeleBot(BOT_TOKEN)
+TOKEN = os.getenv("BOT_TOKEN")
 
+# --- PRONOS (tu peux modifier ici) ---
 PRONOS = {
-    # AFRIQUE - CAN 2027
-    "ouganda": "🇺🇬 *OUGANDA vs BOTSWANA*\n📅 Demain 16h GMT - Qualif CAN\n🔥 Victoire Ouganda @1.55\n✅ BANKER - Ouganda solide à domicile",
-    "angola": "🇦🇴 *ANGOLA vs SOUDAN DU SUD*\n📅 Demain 19h GMT\n🔥 Victoire Angola @1.35\n✅ GROS BANKER 90%",
-    "algerie": "🇩🇿 *ALGERIE vs TOGO*\n📅 Demain 19h GMT\n🔥 Victoire Algérie @1.30\n✅ BANKER DU JOUR 92% - Les Fennecs à la maison",
-    
-    # EUROPE - Ligue des Nations
-    "portugal": "🇵🇹 *PORTUGAL vs DANEMARK*\n📅 Demain 19h45 GMT\n🔥 Victoire Portugal @1.70\n⭐ Ronaldo décisif - Confiance 80%",
-    "norvege": "🇳🇴 *NORVEGE vs PAYS DE GALLES*\n📅 Demain 19h45 GMT\n🔥 Haaland buteur + Norvège @2.10\n⚽ Haaland en feu !",
-    "suede": "🇸🇪 *SUEDE vs BOSNIE*\n📅 Demain 19h45 GMT\n🔥 Victoire Suède @1.85\n✅ Gyokeres buteur probable",
-
-    # ASIE / MONDE
-    "iran": "🇮🇷 *IRAN vs PALESTINE*\n📅 Demain 15h GMT - Amical\n🔥 Victoire Iran @1.40\n✅ Iran supérieur",
+    "suede": "🇸🇪 SUÈDE - Superettan\n\nHelsingborg vs Orgryte -> 1X & -3.5 buts\nCôte: 1.85\nConfiance: 85%",
+    "portugal": "🇵🇹 PORTUGAL - Liga 3\n\nVarzim vs Fafe -> Victoire Varzim\nCôte: 1.95\nConfiance: 90%",
+    "algerie": "🇩🇿 ALGÉRIE - Ligue 1\n\nMC Alger vs CR Belouizdad -> Les deux marquent\nCôte: 1.80\nConfiance: 80%",
+    "jour": "🔥 PRONO DU JOUR - RZ PRONOSTIC\n\n✅ Cumul 3 matchs - Côte totale 4.50\n\n1. Suède: Helsingborg 1X\n2. Portugal: Varzim Gagne\n3. Algérie: BTTS Oui\n\nBonne chance à tous ! 🙏"
 }
 
-def menu():
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        types.InlineKeyboardButton("🇺🇬 Ouganda", callback_data="ouganda"),
-        types.InlineKeyboardButton("🇦🇴 Angola", callback_data="angola"),
-        types.InlineKeyboardButton("🇩🇿 Algérie", callback_data="algerie"),
-        types.InlineKeyboardButton("🇵🇹 Portugal", callback_data="portugal"),
-        types.InlineKeyboardButton("🇳🇴 Norvège", callback_data="norvege"),
-        types.InlineKeyboardButton("🇸🇪 Suède", callback_data="suede"),
-        types.InlineKeyboardButton("🇮🇷 Iran", callback_data="iran"),
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("🇸🇪 Suède", callback_data='suede'), InlineKeyboardButton("🇵🇹 Portugal", callback_data='portugal')],
+        [InlineKeyboardButton("🇩🇿 Algérie", callback_data='algerie')],
+        [InlineKeyboardButton("🔥 PRONO DU JOUR", callback_data='jour')],
+        [InlineKeyboardButton("📊 Mes Stats", callback_data='stats')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "👋 Bienvenue chez **RZ PRONOSTIC** !\n\nLe meilleur du prono gratuit au Burkina 🇧🇫\n\nChoisis ton pays ci-dessous 👇",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
     )
-    return markup
 
-@bot.message_handler(commands=['start','demain','help'])
-def start(m):
-    txt = "🔥 *RZ PRONOSTIC - DEMAIN 14 NOV* 🔥\n\n"
-    txt += "🌍 *TOUS LES MATCHS DU MONDE:*\n\n"
-    txt += "🏆 *AFRIQUE - CAN 2027:*\n🇺🇬 Ouganda vs Botswana\n🇦🇴 Angola vs Soudan du Sud\n🇩🇿 Algérie vs Togo\n\n"
-    txt += "🇪🇺 *EUROPE - Ligue des Nations:*\n🇵🇹 Portugal vs Danemark\n🇳🇴 Norvège vs Galles\n🇸🇪 Suède vs Bosnie\n\n"
-    txt += "👇 *Clique pour ton prono* 👇"
-    bot.send_message(m.chat.id, txt, parse_mode='Markdown', reply_markup=menu())
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
 
-@bot.callback_query_handler(func=lambda call: True)
-def cb(call):
-    p = PRONOS.get(call.data)
-    if p:
-        bot.answer_callback_query(call.id, "Prono chargé!")
-        bot.send_message(call.message.chat.id, p, parse_mode='Markdown', reply_markup=menu())
+    if data == 'stats':
+        text = "📊 **STATS RZ PRONO**\n\n✅ Hier: 2/3 gagnés\n✅ Cette semaine: 11/15\n✅ Taux de réussite: 78%\n\nMerci pour votre confiance !"
+    else:
+        text = PRONOS.get(data, "Prono non trouvé")
 
-@bot.message_handler(func=lambda m: True)
-def all_msg(m):
-    t = m.text.lower()
-    for k,v in PRONOS.items():
-        if k in t:
-            bot.reply_to(m, v, parse_mode='Markdown', reply_markup=menu())
-            return
-    bot.reply_to(m, "👇 Choisis un match de demain !", reply_markup=menu())
+    keyboard = [[InlineKeyboardButton("⬅️ Retour au menu", callback_data='menu')]]
+    if data != 'menu':
+        # pour le bouton retour on renvoie au start
+        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+    else:
+        await start_button_menu(query)
 
-@app.route('/')
-def home():
-    return "RZ MONDIAL Live"
+async def start_button_menu(query):
+    keyboard = [
+        [InlineKeyboardButton("🇸🇪 Suède", callback_data='suede'), InlineKeyboardButton("🇵🇹 Portugal", callback_data='portugal')],
+        [InlineKeyboardButton("🇩🇿 Algérie", callback_data='algerie')],
+        [InlineKeyboardButton("🔥 PRONO DU JOUR", callback_data='jour')],
+        [InlineKeyboardButton("📊 Mes Stats", callback_data='stats')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        "👋 Bienvenue chez **RZ PRONOSTIC** !\n\nChoisis ton pays ci-dessous 👇",
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
 
-def run_bot():
-    print("RZ MONDIAL Bot...")
-    bot.infinity_polling()
-
-threading.Thread(target=run_bot).start()
+def main():
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))
+    print("Bot RZ Prono V2 lancé...")
+    app.run_polling()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    main()
