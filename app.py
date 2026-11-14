@@ -1,9 +1,8 @@
 import os
-import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 TOKEN = os.getenv("BOT_TOKEN")
-bot = telebot.TeleBot(TOKEN)
 
 PRONOS = {
     "suede": "🇸🇪 SUÈDE\nHelsingborg vs Orgryte -> 1X & -3.5 buts\nCôte: 1.85 - Confiance 85%",
@@ -13,28 +12,32 @@ PRONOS = {
 }
 
 def main_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("🇸🇪 Suède", callback_data="suede"),
-        InlineKeyboardButton("🇵🇹 Portugal", callback_data="portugal"),
-        InlineKeyboardButton("🇩🇿 Algérie", callback_data="algerie"),
-        InlineKeyboardButton("🔥 PRONO DU JOUR", callback_data="jour"),
-        InlineKeyboardButton("📊 Stats", callback_data="stats")
-    )
-    return markup
+    keyboard = [
+        [InlineKeyboardButton("🇸🇪 Suède", callback_data='suede'), InlineKeyboardButton("🇵🇹 Portugal", callback_data='portugal')],
+        [InlineKeyboardButton("🇩🇿 Algérie", callback_data='algerie')],
+        [InlineKeyboardButton("🔥 PRONO DU JOUR", callback_data='jour')],
+        [InlineKeyboardButton("📊 Stats", callback_data='stats')]
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(message.chat.id, "👋 Bienvenue chez *RZ PRONOSTIC* 🇧🇫\n\nLe meilleur prono gratuit !\nChoisis ci-dessous 👇", reply_markup=main_menu(), parse_mode='Markdown')
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Bienvenue chez *RZ PRONOSTIC* 🇧🇫\nLe meilleur prono gratuit !\nChoisis ci-dessous 👇", reply_markup=main_menu(), parse_mode='Markdown')
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback(call):
-    if call.data == "stats":
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == 'stats':
         text = "📊 *STATS RZ PRONO*\n\n✅ Hier: 2/3 gagnés\n✅ Semaine: 11/15\n✅ Réussite: 78%"
     else:
-        text = PRONOS.get(call.data, "Non trouvé")
-    
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=text, reply_markup=main_menu(), parse_mode='Markdown')
+        text = PRONOS.get(query.data, "Non trouvé")
+    await query.edit_message_text(text=text, reply_markup=main_menu(), parse_mode='Markdown')
 
-print("Bot RZ Prono V2 lancé...")
-bot.infinity_polling()
+def main():
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))
+    print("Bot RZ V2 lancé...")
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
