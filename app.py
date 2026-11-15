@@ -1,4 +1,5 @@
 import os
+import asyncio
 import threading
 from flask import Flask
 from telegram import Update
@@ -25,6 +26,8 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def run_bot():
     print("Lancement bot...")
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("prono", prono))
