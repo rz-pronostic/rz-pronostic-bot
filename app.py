@@ -4,7 +4,7 @@ import os
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update
 
-# --- PARTIE FLASK POUR RENDER (obligatoire) ---
+# --- PARTIE FLASK POUR RENDER ---
 app_flask = Flask(__name__)
 @app_flask.route('/')
 def home():
@@ -16,8 +16,8 @@ def run_flask():
 
 threading.Thread(target=run_flask, daemon=True).start()
 
-# --- PARTIE BOT TELEGRAM ---
-TOKEN = "MET TON TOKEN ICI"  # <-- Remets ton token BotFather
+# --- PARTIE BOT ---
+TOKEN = os.environ.get("BOT_TOKEN", "MET TON TOKEN ICI")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔥 Bot RZ Pronostic en ligne ! Tape /prono")
