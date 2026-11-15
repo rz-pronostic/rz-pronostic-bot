@@ -35,5 +35,10 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("prono", prono))
     app.add_handler(CommandHandler("pronos", pronos))
     app.add_handler(CommandHandler("stats", stats))
-    print("Bot en polling...")
-    app.run_polling(drop_pending_updates=True)
+    print("Bot en polling - nettoyage conflit...")
+    # Supprime tout webhook / ancien polling
+    import asyncio
+    async def clean():
+        await app.bot.delete_webhook(drop_pending_updates=True)
+    asyncio.get_event_loop().run_until_complete(clean())
+    app.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
