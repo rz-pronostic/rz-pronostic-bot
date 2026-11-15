@@ -1,5 +1,4 @@
 import os
-import asyncio
 import threading
 from flask import Flask
 from telegram import Update
@@ -24,10 +23,13 @@ async def pronos(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📊 STATS: 67% Win - +12.5U ✅")
 
-def run_bot():
-    print("Lancement bot...")
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app_flask.run(host='0.0.0.0', port=port)
+
+if __name__ == '__main__':
+    threading.Thread(target=run_flask, daemon=True).start()
+    print("Lancement bot dans main thread...")
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("prono", prono))
@@ -35,8 +37,3 @@ def run_bot():
     app.add_handler(CommandHandler("stats", stats))
     print("Bot en polling...")
     app.run_polling(drop_pending_updates=True)
-
-if __name__ == '__main__':
-    threading.Thread(target=run_bot, daemon=True).start()
-    port = int(os.environ.get("PORT", 10000))
-    app_flask.run(host='0.0.0.0', port=port)
