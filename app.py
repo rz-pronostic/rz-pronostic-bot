@@ -1,57 +1,42 @@
-from flask import Flask
-import threading
 import os
-from telegram.ext import Application, CommandHandler, ContextTypes
+import threading
+from flask import Flask
 from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 app_flask = Flask(__name__)
+
 @app_flask.route('/')
 def home():
-    return "Bot RZ Pronostic en ligne!"
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app_flask.run(host="0.0.0.0", port=port)
-threading.Thread(target=run_flask, daemon=True).start()
-
-TOKEN = os.environ.get("BOT_TOKEN")
+    return "RZ PRONOSTIC BOT LIVE 🔥"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "🔥 *Bienvenue sur RZ PRONOSTIC* 🔥\n\n"
-        "Commandes:\n"
-        "/prono - Prono du jour\n"
-        "/vip - Pronos VIP\n"
-        "/stats - Stats"
-    )
-    await update.message.reply_text(msg, parse_mode='Markdown')
+    await update.message.reply_text("🔥 Bienvenue sur RZ PRONOSTIC\nCommandes: /prono - Prono du jour\n/pronos - Tous les pronos\n/stats - Stats")
 
 async def prono(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = (
-        "⚽ *PRONO DU JOUR - RZ* ⚽\n\n"
-        "🏆 Match: Real Madrid vs Barcelona\n"
-        "💡 Prono: Double Chance 1X @1.45\n"
-        "🔒 Securite: 85%\n\n"
-        "Tu veux le VIP ? Tape /vip"
-    )
-    await update.message.reply_text(msg, parse_mode='Markdown')
+    await update.message.reply_text("🔥 PRONO DU JOUR:\n\n⚽️ PSG vs Marseille: Victoire PSG @1.85\n💰 Mise conseillée: 2% bankroll")
 
-async def vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🔒 VIP bientôt dispo ! Reste branché.")
+async def pronos(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📋 TOUS LES PRONOS:\n\n1. PSG @1.85\n2. Real Madrid @1.70\n3. Over 2.5 Man City @1.60")
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📊 Stats RZ: 78% de reussite ce mois ✅")
+    await update.message.reply_text("📊 STATS RZ: 67% Win Rate sur 30 derniers jours ✅")
 
-def main():
-    print("Bot lance...")
-    if not TOKEN:
-        print("BOT_TOKEN manquant")
+def run_bot():
+    if not BOT_TOKEN:
+        print("BOT_TOKEN manquant!")
         return
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("prono", prono))
-    app.add_handler(CommandHandler("vip", vip))
-    app.add_handler(CommandHandler("stats", stats))
-    app.run_polling()
+    print("Bot lance...")
+    application = Application.builder().token(BOT_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("prono", prono))
+    application.add_handler(CommandHandler("pronos", pronos))
+    application.add_handler(CommandHandler("stats", stats))
+    application.run_polling(drop_pending_updates=True)
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    threading.Thread(target=run_bot, daemon=True).start()
+    port = int(os.environ.get("PORT", 10000))
+    app_flask.run(host='0.0.0.0', port=port)
